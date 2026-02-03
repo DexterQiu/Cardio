@@ -16,7 +16,7 @@
 !   W = (mu/2) * (I1 - 3) + (1/d) * (J - 1)^2
 !
 ! Voigt order (ANSYS):
-!   STRESS(1:6) = [Sxx, Syy, Szz, Sxy, Syz, Sxz]
+!   STRESS(1:6) = [Sxx, Syy, Szz, Sxy, Syz, Sxz] (Cauchy)
 ! ---------------------------------------------------------------------------
       SUBROUTINE USERMAT(
      &  STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
@@ -40,7 +40,7 @@
 
 !     Locals
       DOUBLE PRECISION F(3,3),CMAT(3,3),I3(3,3)
-      DOUBLE PRECISION S2PK(3,3)
+      DOUBLE PRECISION S2PK(3,3),CAUCHY(3,3)
       DOUBLE PRECISION MU,DPEN,DPEN_EFF,J,TRC,PSI,RAMP
       DOUBLE PRECISION CWORK(3,3),SPERT(3,3),SMINUS(3,3)
       DOUBLE PRECISION EPS,DC,DE
@@ -83,13 +83,18 @@
       PSI = 0.5D0*MU*(TRC - 3.0D0) + (1.0D0/DPEN_EFF) * (J - 1.0D0)**2
       SSE = PSI
 
-!     Fill STRESS (Voigt) with 2nd PK stress (Total Lagrangian)
-      STRESS(1) = S2PK(1,1)
-      STRESS(2) = S2PK(2,2)
-      STRESS(3) = S2PK(3,3)
-      STRESS(4) = S2PK(1,2)
-      STRESS(5) = S2PK(2,3)
-      STRESS(6) = S2PK(1,3)
+!     Cauchy stress: sigma = (1/J) * F * S * F^T
+      CALL MAT_MATMULT(F, S2PK, CWORK)
+      CALL MAT_MATMULT(CWORK, TRANSPOSE(F), CAUCHY)
+      CAUCHY = CAUCHY / J
+
+!     Fill STRESS (Voigt) with Cauchy stress
+      STRESS(1) = CAUCHY(1,1)
+      STRESS(2) = CAUCHY(2,2)
+      STRESS(3) = CAUCHY(3,3)
+      STRESS(4) = CAUCHY(1,2)
+      STRESS(5) = CAUCHY(2,3)
+      STRESS(6) = CAUCHY(1,3)
 
 !     Consistent tangent via numerical differentiation in Green-Lagrange strain
       CALL ZERO_TANGENT(DDSDDE, NTENS)
