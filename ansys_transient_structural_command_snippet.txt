@@ -1,0 +1,52 @@
+! ---------------------------------------------------------------------------
+! Example ANSYS Mechanical APDL command snippet for Transient Structural.
+! Inside the GUI: insert a "Commands (APDL)" object under
+!   Analysis > Environment > Commands
+! then paste this block. You can also run it as a standalone APDL input file.
+! This snippet assumes a USERMAT material has been defined elsewhere and
+! a Transient Structural analysis is active.
+! ---------------------------------------------------------------------------
+
+/prep7
+! Define element type (example: SOLID186 for large deformation)
+! NOTE: Large deformation is controlled by NLGEOM,ON (not SOLID186 KEYOPT(3)).
+! If your Mechanical GUI already inserted a KEYOPT(3)=2 line, remove it.
+et,1,186
+
+! Define material with USERMAT
+mp,ex,1,1.0       ! Dummy (not used by USERMAT)
+mp,nuxy,1,0.3     ! Dummy (not used by USERMAT)
+
+! USERMAT definition: TB,USER
+! TB,USER,mat_id,1,number_of_properties
+! For PROPS: mu, kappa
+TB,USER,1,1,2
+TBDATA,1,1.0e6,1.0e9
+
+! Geometry / mesh assumed defined here
+
+finish
+
+/solu
+antype,trans      ! Transient Structural
+trnopt,full       ! Full transient
+nlgeom,on         ! Large deformation
+kbc,1             ! Ramped loads
+
+! Time settings
+TIME,1.0
+DELTIM,0.01,0.001,0.1
+
+! Apply loads / BCs (example placeholder)
+! d,all,ux,0
+! f,node_id,fx,100
+
+! If elements distort under large deformation, consider:
+! - Smaller time steps (reduce initial/min DELTIM)
+! - Improved mesh quality/aspect ratios
+! - Switching to EQSLV,SPARSE for reduced integration bricks
+! - Ramped loading (KBC,1 already set)
+! Solve for two steps
+nsubst,100,10,200
+solve
+finish
