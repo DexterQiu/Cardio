@@ -9,6 +9,7 @@
 ! Material parameters (PROPS):
 !   PROPS(1) = shear modulus, mu
 !   PROPS(2) = augmented Lagrangian bulk parameter, kappa
+!   PROPS(3) = optional ramp time for kappa (same time units as TIME)
 !
 ! State variables (STATEV):
 !   STATEV(1) = pressure-like Lagrange multiplier p
@@ -45,7 +46,7 @@
 !     Locals
       DOUBLE PRECISION F(3,3),B(3,3),CMAT(3,3),CMATINV(3,3),I3(3,3)
       DOUBLE PRECISION S2PK(3,3)
-      DOUBLE PRECISION MU,KAPPA,J,TRB,P
+      DOUBLE PRECISION MU,KAPPA,J,TRB,P,KRAMP
       DOUBLE PRECISION LAMBDA,I1BAR,PSI
       DOUBLE PRECISION CWORK(3,3),SPERT(3,3),SMINUS(3,3)
       DOUBLE PRECISION EPS,DC,DE
@@ -73,6 +74,12 @@
         KAPPA = PROPS(2)
       ELSE
         KAPPA = 1.0D6 * MU
+      END IF
+      KRAMP = KAPPA
+      IF (NPROPS .GE. 3) THEN
+        IF (PROPS(3) .GT. 0.0D0) THEN
+          KRAMP = KAPPA * MIN(1.0D0, TIME(1) / PROPS(3))
+        END IF
       END IF
       P = 0.0D0
       IF (NSTATV .GE. 1) THEN
@@ -153,7 +160,7 @@
 
 !     Update pressure-like multiplier (augmented Lagrangian)
       IF (NSTATV .GE. 1) THEN
-        STATEV(1) = P + KAPPA * (J - 1.0D0)
+        STATEV(1) = P + KRAMP * (J - 1.0D0)
       END IF
 
       RETURN
